@@ -5,6 +5,7 @@ export interface IProject extends Document {
   description: string;
   createdBy: Types.ObjectId;
   connection: Types.ObjectId;
+  catalogs: String[];
 }
 
 const ProjectSchema = new Schema<IProject>(
@@ -16,7 +17,6 @@ const ProjectSchema = new Schema<IProject>(
       ref: "User",
       required: true,
     },
-    
   },
   { timestamps: true }
 );

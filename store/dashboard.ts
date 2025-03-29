@@ -14,8 +14,10 @@ interface Project {
 interface DashboardState {
   connection: Connection;
   project: Project | null;
+  catalog: String | null;
   setConnection: (connection: Connection) => void;
   setProject: (project: Project) => void;
+  setCatalog: (catalog: String) => void;
 }
 
 const useDashboardStore = create<DashboardState>((set) => ({
@@ -25,8 +27,10 @@ const useDashboardStore = create<DashboardState>((set) => ({
     port: 4032,
   },
   project: null,
+  catalog: null,
   setConnection: (connection) => set(() => ({ connection })),
   setProject: (project) => set(() => ({ project })),
+  setCatalog: (catalog) => set(() => ({ catalog })),
 }));
 
 export default useDashboardStore;

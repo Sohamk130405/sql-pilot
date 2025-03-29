@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IConnection extends Document {
   dialect: "Trino" | "Spark";
@@ -17,7 +17,7 @@ const ConnectionSchema = new Schema<IConnection>(
     username: { type: String, required: true },
     port: { type: Number, required: true },
     password: { type: String, required: true },
-    
+
   },
   { timestamps: true }
 );
