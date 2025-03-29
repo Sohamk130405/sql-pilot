@@ -17,6 +17,7 @@ const ConnectionSchema = new Schema<IConnection>(
     username: { type: String, required: true },
     port: { type: Number, required: true },
     password: { type: String, required: true },
+    
   },
   { timestamps: true }
 );
