@@ -7,16 +7,27 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { signOut, useSession } from "next-auth/react";
 import CreateProjectModal from "./create-project-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import Link from "next/link";
+import { getSchemas } from "@/actions/schemas"; // Import the server action
+import { useParams } from "next/navigation";
 
 const Navbar = () => {
   const { data: session } = useSession();
+  const { id } = useParams();
+  const [schemas, setSchemas] = useState<string[]>([]);
+  const [selectedSchema, setSelectedSchema] = useState<string | null>(null);
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -40,6 +51,25 @@ const Navbar = () => {
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    const fetchSchemas = async () => {
+      const fetchedSchemas = JSON.parse(await getSchemas(id as string));
+      console.log("Hello");
+      if (fetchedSchemas.length > 0) {
+        setSchemas(fetchedSchemas.map((schema: any) => schema.name));
+        setSelectedSchema(fetchedSchemas[0].name);
+
+        console.log(fetchedSchemas);
+        console.log(schemas);
+      } else {
+        setSchemas([]);
+        setSelectedSchema(null);
+      }
+    };
+    fetchSchemas();
+  }, []);
+
   return (
     <>
       <header className="sticky top-0 z-30 bg-dark-200/80 backdrop-blur-md border-b border-white/10 p-4">
@@ -68,15 +98,20 @@ const Navbar = () => {
 
           <div className="flex items-center gap-2">
             <div className="hidden md:flex items-center gap-2 mr-2">
-              <Select>
-                <SelectTrigger>
-                  <span>Select Engine</span>
-                </SelectTrigger>
-                <SelectContent className="rounded-md bg-dark-100/50 border border-white/10  py-1 text-sm">
-                  <SelectItem value="trino">Trino SQL</SelectItem>
-                  <SelectItem value="spark">Spark SQL</SelectItem>
-                </SelectContent>
-              </Select>
+              {schemas.length > 0 && (
+                <Select onValueChange={setSelectedSchema}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select a schema" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-md bg-dark-100/50 border border-white/10 py-1 text-sm">
+                    {schemas.map((schema) => (
+                      <SelectItem key={schema} value={schema}>
+                        {schema}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button
                 onClick={() => setShowCreateProject(true)}
                 variant="outline"
@@ -251,132 +286,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-/*
-
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsSearchOpen(false);
-        setShowNotifications(false);
-        setShowUserMenu(false);
-      }
-    };
-
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        !target.closest("#search-modal") &&
-        !target.closest("#search-trigger")
-      ) {
-        setIsSearchOpen(false);
-      }
-      if (
-        !target.closest("#notifications-panel") &&
-        !target.closest("#notifications-trigger")
-      ) {
-        setShowNotifications(false);
-      }
-      if (!target.closest("#user-menu") && !target.closest("#user-trigger")) {
-        setShowUserMenu(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleEsc);
-    window.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      window.removeEventListener("keydown", handleEsc);
-      window.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-
- <AnimatePresence mode="wait">
-          {isSearchOpen && (
-            <motion.div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center pt-[20vh]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <motion.div
-                id="search-modal"
-                className="w-full max-w-2xl bg-dark-100/95 backdrop-blur-md rounded-lg border border-white/10 shadow-2xl overflow-hidden"
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="p-4 flex items-center gap-3 border-b border-white/10">
-                  <Search className="h-5 w-5 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search for queries, schemas, or commands..."
-                    className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-muted-foreground"
-                    autoFocus
-                  />
-                  <div className="text-xs border border-white/20 rounded px-1 bg-dark-200/80">
-                    ESC
-                  </div>
-                </div>
-                <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
-                  <div className="p-2">
-                    <div className="px-3 py-2 text-xs text-muted-foreground uppercase font-medium">
-                      Recent Searches
-                    </div>
-                    <div className="space-y-1">
-                      {[
-                        "Top 10 products by revenue",
-                        "Customer retention analysis",
-                        "Monthly sales by region",
-                      ].map((search) => (
-                        <button
-                          key={search}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-white/5 rounded-md flex items-center gap-2 transition-colors"
-                        >
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          {search}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="px-3 py-2 text-xs text-muted-foreground uppercase font-medium mt-4">
-                      Suggested
-                    </div>
-                    <div className="space-y-1">
-                      {[
-                        {
-                          text: "Create new schema",
-                          icon: (
-                            <Database className="h-4 w-4 text-neon-purple" />
-                          ),
-                        },
-                        {
-                          text: "Generate SQL query",
-                          icon: <Code className="h-4 w-4 text-neon-blue" />,
-                        },
-                        {
-                          text: "View documentation",
-                          icon: <BookOpen className="h-4 w-4 text-neon-teal" />,
-                        },
-                      ].map((item) => (
-                        <button
-                          key={item.text}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-white/5 rounded-md flex items-center gap-2 transition-colors"
-                        >
-                          {item.icon}
-                          {item.text}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-*/

@@ -13,6 +13,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import MonacoEditor from "@/components/shared/monaco-editor";
+import { saveSchema } from "@/actions/schemas"; // Import the saveSchema action
+import useDashboardStore from "@/store/dashboard";
+import { useParams } from "next/navigation";
 
 export default function SchemaDesigner() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -25,6 +28,8 @@ export default function SchemaDesigner() {
   const [activeTab, setActiveTab] = useState("editor"); // Default to editor tab
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { id } = useParams();
 
   const examples = [
     "Create a schema for an e-commerce platform with products, categories, customers, and orders",
@@ -167,6 +172,19 @@ GROUP BY
   const handleExampleClick = (example: string) => {
     setNaturalLanguageInput(example);
     setShowExamples(false);
+  };
+
+  const handleSave = async () => {
+    if (!generatedSchema.trim()) return;
+
+    const schema = {
+      name: "New Schema", // Replace with a dynamic name if needed
+      ddl: generatedSchema,
+      project: id as string, // Replace with the actual project ID
+    };
+
+    await saveSchema(schema);
+    setActiveTab("editor"); // Optionally switch to the editor tab after saving
   };
 
   return (
@@ -320,10 +338,10 @@ GROUP BY
             </h3>
             <div className="flex gap-2">
               <Button
-                variant={activeTab === "editor" ? "default" : "outline"}
-                onClick={() => setActiveTab("editor")}
+                onClick={handleSave}
+                className="neon-gradient-bg hover:opacity-90 transition-opacity"
               >
-                Editor
+                Save
               </Button>
             </div>
           </div>

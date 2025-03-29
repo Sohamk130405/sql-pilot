@@ -1,3 +1,4 @@
+import { SchemaType } from "@/actions/schemas";
 import { create } from "zustand";
 
 interface Connection {
@@ -7,15 +8,17 @@ interface Connection {
 }
 
 interface Project {
-  id: string;
+  _id: string;
   title: string;
 }
 
 interface DashboardState {
   connection: Connection;
+  schema: SchemaType | null;
   project: Project | null;
   catalog: String | null;
   setConnection: (connection: Connection) => void;
+  setSchema: (schema: SchemaType) => void;
   setProject: (project: Project) => void;
   setCatalog: (catalog: String) => void;
 }
@@ -26,9 +29,11 @@ const useDashboardStore = create<DashboardState>((set) => ({
     host: "localhost",
     port: 4032,
   },
+  schema: null,
   project: null,
   catalog: null,
   setConnection: (connection) => set(() => ({ connection })),
+  setSchema: (schema) => set(() => ({ schema })),
   setProject: (project) => set(() => ({ project })),
   setCatalog: (catalog) => set(() => ({ catalog })),
 }));

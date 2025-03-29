@@ -1,3 +1,4 @@
+'use server'
 import Query from "@/models/Query";
 
 interface Schema {

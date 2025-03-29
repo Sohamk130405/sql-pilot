@@ -19,6 +19,6 @@ const schemaSchema = new mongoose.Schema<ISchema>(
   { timestamps: true }
 );
 
-const Schema =
+const SchemaModel =
   mongoose.models.Schema || mongoose.model<ISchema>("Schema", schemaSchema);
-export default Schema;
+export default SchemaModel;
