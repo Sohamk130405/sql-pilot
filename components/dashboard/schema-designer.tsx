@@ -12,6 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import MonacoEditor from "@/components/shared/monaco-editor";
 
 export default function SchemaDesigner() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -21,7 +22,7 @@ export default function SchemaDesigner() {
   const [generatedSchema, setGeneratedSchema] = useState("");
   const [showTips, setShowTips] = useState(true);
   const [showExamples, setShowExamples] = useState(false);
-  const [activeTab, setActiveTab] = useState("ddl");
+  const [activeTab, setActiveTab] = useState("editor"); // Default to editor tab
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -153,6 +154,7 @@ GROUP BY
   p.product_id, p.name, p.category_id, c.name;`);
       setIsGenerating(false);
       setHasGenerated(true);
+      setActiveTab("editor"); // Switch to editor tab after generation
     }, 3000);
   };
 
@@ -312,28 +314,65 @@ GROUP BY
         </Card>
 
         <Card className="bg-dark-100/50 backdrop-blur-md border border-white/10 overflow-hidden">
+          <div className="p-6 border-b border-white/10 flex justify-between">
+            <h3 className="text-xl font-display font-bold neon-gradient-text">
+              Schema Editor
+            </h3>
+            <div className="flex gap-2">
+              <Button
+                variant={activeTab === "editor" ? "default" : "outline"}
+                onClick={() => setActiveTab("editor")}
+              >
+                Editor
+              </Button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <div className="relative h-[calc(100vh-350px)] border rounded-md overflow-hidden">
+              <MonacoEditor
+                language="sql"
+                value={generatedSchema}
+                onChange={(value) => setGeneratedSchema(value || "")}
+              />
+            </div>
+          </div>
+
+          {hasGenerated && (
+            <div className="px-6 py-4 border-t border-white/10 flex justify-end">
+              <Button
+                variant="outline"
+                className="neon-border bg-dark-200/50"
+                onClick={handleCopy}
+              >
+                {copied ? "Copied!" : "Copy Schema"}
+              </Button>
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="bg-dark-100/50 backdrop-blur-md border border-white/10 overflow-hidden">
           <div className="p-6 border-b border-white/10">
             <h3 className="text-xl font-display font-bold neon-gradient-text">
               Schema Visualization
             </h3>
-            <p className="text-muted-foreground text-sm mt-1">
-              Visual representation of your database schema
-            </p>
           </div>
 
           <div className="p-6">
-            <div className="min-h-[300px] flex items-center justify-center border-2 border-dashed border-white/10 rounded-md">
+            <div className="min-h-[500px] flex items-center justify-center border-2 border-dashed border-white/10 rounded-md ">
               {hasGenerated ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="w-full h-full"
+                  className="w-full h-full overflow-hidden object-fit-cover"
                 >
-                  <div className="relative w-full h-[300px] overflow-hidden">
+                  <div className="relative w-full h-full overflow-hidden  object-fit-cover">
                     <svg
                       width="100%"
                       height="100%"
-                      viewBox="0 0 800 600"
+                      viewBox="0 0 1000 600"
                       className="text-white"
                     >
                       <defs>
@@ -371,6 +410,7 @@ GROUP BY
                         <text
                           x="150"
                           y="30"
+                          fill="#9D4EDD"
                           textAnchor="middle"
                           className="text-neon-purple font-bold"
                         >
@@ -384,16 +424,16 @@ GROUP BY
                           stroke="white"
                           strokeOpacity="0.3"
                         />
-                        <text x="75" y="70" className="text-xs">
+                        <text fill="white" x="75" y="70" className="text-xs">
                           category_id (PK)
                         </text>
-                        <text x="75" y="100" className="text-xs">
+                        <text fill="white" x="75" y="100" className="text-xs">
                           name
                         </text>
-                        <text x="75" y="120" className="text-xs">
+                        <text fill="white" x="75" y="120" className="text-xs">
                           description
                         </text>
-                        <text x="75" y="140" className="text-xs">
+                        <text fill="white" x="75" y="140" className="text-xs">
                           timestamps
                         </text>
                       </motion.g>
@@ -418,6 +458,7 @@ GROUP BY
                           x="450"
                           y="30"
                           textAnchor="middle"
+                          fill="#00B4D8"
                           className="text-neon-blue font-bold"
                         >
                           products
@@ -430,22 +471,22 @@ GROUP BY
                           stroke="white"
                           strokeOpacity="0.3"
                         />
-                        <text x="375" y="70" className="text-xs">
+                        <text fill="white" x="375" y="70" className="text-xs">
                           product_id (PK)
                         </text>
-                        <text x="375" y="100" className="text-xs">
+                        <text fill="white" x="375" y="100" className="text-xs">
                           category_id (FK)
                         </text>
-                        <text x="375" y="120" className="text-xs">
+                        <text fill="white" x="375" y="120" className="text-xs">
                           name
                         </text>
-                        <text x="375" y="140" className="text-xs">
+                        <text fill="white" x="375" y="140" className="text-xs">
                           price
                         </text>
-                        <text x="375" y="160" className="text-xs">
+                        <text fill="white" x="375" y="160" className="text-xs">
                           stock_quantity
                         </text>
-                        <text x="375" y="180" className="text-xs">
+                        <text fill="white" x="375" y="180" className="text-xs">
                           timestamps
                         </text>
                       </motion.g>
@@ -467,6 +508,7 @@ GROUP BY
                           strokeWidth="2"
                         />
                         <text
+                          fill="#FF3CA2"
                           x="150"
                           y="230"
                           textAnchor="middle"
@@ -482,19 +524,19 @@ GROUP BY
                           stroke="white"
                           strokeOpacity="0.3"
                         />
-                        <text x="75" y="270" className="text-xs">
+                        <text fill="white" x="75" y="270" className="text-xs">
                           customer_id (PK)
                         </text>
-                        <text x="75" y="300" className="text-xs">
+                        <text fill="white" x="75" y="300" className="text-xs">
                           first_name
                         </text>
-                        <text x="75" y="320" className="text-xs">
+                        <text fill="white" x="75" y="320" className="text-xs">
                           last_name
                         </text>
-                        <text x="75" y="340" className="text-xs">
+                        <text fill="white" x="75" y="340" className="text-xs">
                           email
                         </text>
-                        <text x="75" y="360" className="text-xs">
+                        <text fill="white" x="75" y="360" className="text-xs">
                           timestamps
                         </text>
                       </motion.g>
@@ -516,6 +558,7 @@ GROUP BY
                           strokeWidth="2"
                         />
                         <text
+                          fill="#00F5D4"
                           x="450"
                           y="230"
                           textAnchor="middle"
@@ -531,19 +574,19 @@ GROUP BY
                           stroke="white"
                           strokeOpacity="0.3"
                         />
-                        <text x="375" y="270" className="text-xs">
+                        <text fill="white" x="375" y="270" className="text-xs">
                           order_id (PK)
                         </text>
-                        <text x="375" y="300" className="text-xs">
+                        <text fill="white" x="375" y="300" className="text-xs">
                           customer_id (FK)
                         </text>
-                        <text x="375" y="320" className="text-xs">
+                        <text fill="white" x="375" y="320" className="text-xs">
                           order_date
                         </text>
-                        <text x="375" y="340" className="text-xs">
+                        <text fill="white" x="375" y="340" className="text-xs">
                           status
                         </text>
-                        <text x="375" y="360" className="text-xs">
+                        <text fill="white" x="375" y="360" className="text-xs">
                           total_amount
                         </text>
                       </motion.g>
@@ -565,6 +608,7 @@ GROUP BY
                           strokeWidth="2"
                         />
                         <text
+                          fill="#FFD60A"
                           x="750"
                           y="130"
                           textAnchor="middle"
@@ -580,19 +624,19 @@ GROUP BY
                           stroke="white"
                           strokeOpacity="0.3"
                         />
-                        <text x="675" y="170" className="text-xs">
+                        <text fill="white" x="675" y="170" className="text-xs">
                           order_item_id (PK)
                         </text>
-                        <text x="675" y="200" className="text-xs">
+                        <text fill="white" x="675" y="200" className="text-xs">
                           order_id (FK)
                         </text>
-                        <text x="675" y="220" className="text-xs">
+                        <text fill="white" x="675" y="220" className="text-xs">
                           product_id (FK)
                         </text>
-                        <text x="675" y="240" className="text-xs">
+                        <text fill="white" x="675" y="240" className="text-xs">
                           quantity
                         </text>
-                        <text x="675" y="260" className="text-xs">
+                        <text fill="white" x="675" y="260" className="text-xs">
                           price
                         </text>
                       </motion.g>
@@ -650,18 +694,6 @@ GROUP BY
               )}
             </div>
           </div>
-
-          {hasGenerated && (
-            <div className="px-6 py-4 border-t border-white/10 flex justify-end">
-              <Button
-                variant="outline"
-                className="neon-border bg-dark-200/50"
-                onClick={handleCopy}
-              >
-                {copied ? "Copied!" : "Copy Schema"}
-              </Button>
-            </div>
-          )}
         </Card>
       </div>
     </div>
