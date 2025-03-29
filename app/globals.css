@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 260 20% 98%;
+    --foreground: 260 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 260 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 260 25% 15%;
+
+    --primary: 270 70% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 190 100% 42%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 260 20% 96%;
+    --muted-foreground: 260 10% 50%;
+
+    --accent: 325 100% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 260 20% 92%;
+    --input: 260 20% 92%;
+    --ring: 270 70% 56%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 260 25% 11%;
+    --foreground: 260 20% 98%;
+
+    --card: 260 25% 15%;
+    --card-foreground: 260 20% 98%;
+
+    --popover: 260 25% 15%;
+    --popover-foreground: 260 20% 98%;
+
+    --primary: 270 70% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 190 100% 42%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 260 25% 18%;
+    --muted-foreground: 260 10% 70%;
+
+    --accent: 325 100% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 260 25% 20%;
+    --input: 260 25% 20%;
+    --ring: 270 70% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+@layer components {
+  .neon-glow {
+    box-shadow: 0 0 10px theme("colors.neon.purple"), 0 0 20px theme("colors.neon.purple");
+  }
+
+  .neon-glow-blue {
+    box-shadow: 0 0 10px theme("colors.neon.blue"), 0 0 20px theme("colors.neon.blue");
+  }
+
+  .neon-glow-pink {
+    box-shadow: 0 0 10px theme("colors.neon.pink"), 0 0 20px theme("colors.neon.pink");
+  }
+
+  .neon-glow-teal {
+    box-shadow: 0 0 10px theme("colors.neon.teal"), 0 0 20px theme("colors.neon.teal");
+  }
+
+  .neon-border {
+    position: relative;
+  }
+
+  .neon-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1.5px;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      theme("colors.neon.purple"),
+      theme("colors.neon.pink"),
+      theme("colors.neon.blue"),
+      theme("colors.neon.teal"),
+      theme("colors.neon.purple")
+    );
+    background-size: 300% 100%;
+    animation: gradient-shift 5s ease infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .neon-text {
+    color: theme("colors.neon.purple");
+    text-shadow: 0 0 5px theme("colors.neon.purple");
+  }
+
+  .neon-text-blue {
+    color: theme("colors.neon.blue");
+    text-shadow: 0 0 5px theme("colors.neon.blue");
+  }
+
+  .neon-text-pink {
+    color: theme("colors.neon.pink");
+    text-shadow: 0 0 5px theme("colors.neon.pink");
+  }
+
+  .neon-text-teal {
+    color: theme("colors.neon.teal");
+    text-shadow: 0 0 5px theme("colors.neon.teal");
+  }
+
+  .neon-text-yellow {
+    color: theme("colors.neon.yellow");
+    text-shadow: 0 0 5px theme("colors.neon.yellow");
+  }
+
+  .neon-gradient-text {
+    @apply text-transparent bg-clip-text;
+    background-image: linear-gradient(
+      90deg,
+      theme("colors.neon.purple"),
+      theme("colors.neon.pink"),
+      theme("colors.neon.blue")
+    );
+    background-size: 300% 100%;
+    animation: gradient-shift 5s ease infinite;
+  }
+
+  .neon-gradient-text-static {
+    @apply text-transparent bg-clip-text;
+    background-image: linear-gradient(90deg, theme("colors.neon.purple"), theme("colors.neon.pink"));
+  }
+
+  .neon-gradient-bg {
+    background: linear-gradient(
+      90deg,
+      theme("colors.neon.purple"),
+      theme("colors.neon.pink"),
+      theme("colors.neon.blue"),
+      theme("colors.neon.teal"),
+      theme("colors.neon.purple")
+    );
+    background-size: 300% 100%;
+    animation: gradient-shift 5s ease infinite;
+  }
+
+  .glass-card {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+
+  .dark .glass-card {
+    @apply bg-dark-100/50 backdrop-blur-md border border-white/10;
+  }
+
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-md border border-white/30 dark:bg-dark-100/30 dark:border-white/10;
+  }
+
+  .noise-bg {
+    @apply bg-noise;
+  }
+
+  .mesh-gradient {
+    @apply bg-gradient-mesh;
+  }
+
+  .typing-effect {
+    @apply overflow-hidden whitespace-nowrap border-r-2 border-primary;
+    animation: typing 3.5s steps(40, end), blink 1s step-end infinite;
+  }
+
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+
+  .shimmer::before {
+    @apply absolute inset-0;
+    content: "";
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: shimmer 2s linear infinite;
+  }
+
+  .dark .shimmer::before {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  }
+
+  .morph-blob {
+    animation: morph 8s ease-in-out infinite;
+  }
+
+  .grid-pattern {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .dark .grid-pattern {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+
+  .dot-pattern {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .dark .dot-pattern {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
