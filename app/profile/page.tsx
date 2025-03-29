@@ -997,8 +997,8 @@ export default function ProfilePage() {
                                           onClick={() =>
                                             handleCopy(
                                               connection.type === "Trino"
-                                                ? connection.catalog
-                                                : connection.database,
+                                                ? (connection.catalog as string)
+                                                : (connection.database as string),
                                               `catalog-${connection.id}`
                                             )
                                           }
@@ -1906,6 +1906,7 @@ export default function ProfilePage() {
                   </Card>
                 </motion.div>
               )}
+              
             </AnimatePresence>
           </div>
         </div>

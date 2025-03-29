@@ -6,6 +6,7 @@ import useDashboardStore from "@/store/dashboard";
 import { getProjectsByUser } from "@/actions/projects";
 import CreateProjectModal from "@/components/dashboard/create-project-modal";
 import { Loader } from "lucide-react";
+import Loading from "./loading";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const projects = JSON.parse(await getProjectsByUser());
+        const projects = JSON.parse(await getProjectsByUser(1));
         if (projects.length > 0) {
           setProject(projects[0]);
           router.push(`/dashboard/${projects[0]._id}`);
@@ -34,11 +35,7 @@ export default function DashboardPage() {
   }, [router, setProject]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen ">
-        <Loader className="animate-spin transition size-5" />
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

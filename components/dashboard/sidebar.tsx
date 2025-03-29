@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Database,
@@ -13,11 +13,28 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getProjectsByUser } from "@/actions/projects";
+import { usePathname, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
-export default function Sidebar() {
+export default function Sidebar({
+  activeTab,
+  setActiveTab,
+}: {
+  activeTab: string;
+  setActiveTab: (val: string) => void;
+}) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState("schema");
-
+  const [projects, setProjects] = useState([]);
+  const router = useRouter();
+  const pathname = usePathname();
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const res = await getProjectsByUser(3);
+      setProjects(JSON.parse(res));
+    };
+    fetchProjects();
+  }, []);
   return (
     <>
       {/* Mobile sidebar toggle */}
@@ -128,20 +145,23 @@ export default function Sidebar() {
                     Recent Projects
                   </h3>
                   <div className="space-y-1">
-                    {[
-                      "E-commerce Database",
-                      "Analytics Dashboard",
-                      "User Management",
-                    ].map((project, index) => (
+                    {projects.map((project: any, index) => (
                       <motion.button
-                        key={project}
-                        className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-white rounded-md hover:bg-white/5 transition-colors"
+                        key={project._id.toString()}
+                        className={cn(
+                          "w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-white rounded-md hover:bg-white/5 transition-colors",
+                          pathname.includes(project._id.toString()) &&
+                            "text-white bg-white/5 border border-white"
+                        )}
                         whileHover={{ x: 5 }}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
+                        onClick={() =>
+                          router.push(`/dashboard/${project._id.toString()}`)
+                        }
                       >
-                        {project}
+                        {project.title}
                       </motion.button>
                     ))}
                   </div>
