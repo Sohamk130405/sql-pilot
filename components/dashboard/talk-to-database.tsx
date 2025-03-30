@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Send, ArrowRight, MessageSquare, Bot, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Send, Bot, User, Upload, File, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,7 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -20,56 +19,134 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { createGeminiSQLGenerator, SQLGenerationResult } from "@/lib/gemini";
+import { toast } from "@/components/ui/use-toast";
+import { createFile, getFilesByProjectId } from "@/actions/file";
+import { useParams } from "next/navigation";
+
+interface Message {
+  role: string;
+  content: string;
+  isQuery?: boolean;
+}
+
+interface FileUploadResponse {
+  message: string;
+  file_name: string;
+}
 
 export default function TalkToDatabase() {
+  const { id } = useParams();
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
-    [
-      {
-        role: "system",
-        content:
-          "Welcome to SQLPilot! Ask me any question about your data in natural language, and I'll generate the SQL query for you.",
-      },
-    ]
-  );
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "system",
+      content:
+        "Welcome to SQLPilot! Ask me any question about your data in natural language, and I'll generate the SQL query for you.",
+    },
+  ]);
   const [input, setInput] = useState("");
-  const [generatedSQL, setGeneratedSQL] = useState("");
-  const [hasResults, setHasResults] = useState(false);
-  const [queryExplanation, setQueryExplanation] = useState("");
-  const [isExplanationDialogOpen, setIsExplanationDialogOpen] = useState(false);
+  const [files, setFiles] = useState<{ name: string }[]>([]);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
 
-  // Initialize Gemini SQL Generator
-  const sqlGenerator = createGeminiSQLGenerator();
+  useEffect(() => {
+    loadFiles();
+  }, [id]);
+
+  const loadFiles = async () => {
+    try {
+      const projectFiles = await getFilesByProjectId(id as string);
+      setFiles(projectFiles);
+    } catch (error) {
+      console.error("Error loading files:", error);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+
+    const allowedTypes = [
+      "text/csv",
+      "application/json",
+      "application/x-parquet",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload only CSV, JSON, or Parquet files",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("http://10.1.50.35:5000/upload_file", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data: FileUploadResponse = await response.json();
+
+      // Create file record in database after successful upload
+      await createFile(data.file_name, id as string);
+
+      toast({
+        title: "Success",
+        description: data.message,
+      });
+
+      loadFiles();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload file",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !selectedFile) return;
 
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-    setHasResults(false);
 
     try {
-      const result: SQLGenerationResult = await sqlGenerator.generateSQL(input);
+      const response = await fetch("http://10.1.50.35:5000/talk_to_data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          file_name: selectedFile,
+          query: input,
+        }),
+      });
+      console.log(response);
 
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      const botResponse = {
-        role: "assistant",
-        content: "I've generated a SQL query based on your request.",
-      };
-
-      setMessages((prev) => [...prev, botResponse]);
-      setGeneratedSQL(result.query);
+      const data = await response.json();
+      console.log(data);
+      // Add the query and response messages
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Query: ${data.result.input}`,
+          isQuery: true,
+        },
+        { role: "assistant", content: data.result.output },
+      ]);
     } catch (error) {
-      console.error("Error generating SQL:", error);
+      console.error("Error querying data:", error);
       const errorMessage = {
         role: "assistant",
-        content: "Sorry, I couldn't generate a SQL query. Please try again.",
+        content: "Sorry, I couldn't process your query. Please try again.",
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -77,31 +154,82 @@ export default function TalkToDatabase() {
     }
   };
 
-  const handleExplainQuery = async () => {
-    try {
-      const explanation = await sqlGenerator.explainQuery(generatedSQL);
-      setQueryExplanation(explanation);
-      setIsExplanationDialogOpen(true);
-    } catch (error) {
-      console.error("Error explaining query:", error);
-    }
-  };
-
-  const handleExecute = () => {
-    // In a real-world scenario, this would connect to your actual database
-    // For now, we'll just simulate results
-    setHasResults(true);
-  };
-
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-180px)]">
         <Card className="lg:col-span-1 flex flex-col glass-card">
           <CardHeader>
-            <CardTitle className="gradient-text">
-              Chat with SQL Assistant
-            </CardTitle>
-            <CardDescription>Ask questions in natural language</CardDescription>
+            <CardTitle className="gradient-text">Files</CardTitle>
+            <CardDescription>
+              Upload and select files to analyze
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-auto">
+            <div
+              className={`border-2 border-dashed rounded-lg p-4 mb-4 ${
+                dragActive ? "border-primary" : "border-muted"
+              }`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragActive(true);
+              }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragActive(false);
+                const file = e.dataTransfer.files[0];
+                handleFileUpload(file);
+              }}
+            >
+              <Input
+                type="file"
+                accept=".csv,.json,.parquet"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file);
+                }}
+                className="hidden"
+                id="file-upload"
+              />
+              <label
+                htmlFor="file-upload"
+                className="flex flex-col items-center gap-2 cursor-pointer"
+              >
+                <Upload className="h-8 w-8 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  Drop files here or click to upload
+                </span>
+              </label>
+            </div>
+
+            <h3 className="text-md">Previous Uploads</h3>
+            <div className="gap-2 grid grid-cols-2 mt-2">
+              {files.map((file) => (
+                <div
+                  key={file.name}
+                  className={`p-2 rounded-lg cursor-pointer flex gap-2  border border-white ${
+                    selectedFile === file.name
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                      : "hover:bg-muted bg-white/10"
+                  }`}
+                  onClick={() => setSelectedFile(file.name)}
+                >
+                  <FileText />
+                  {file.name}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2 flex flex-col">
+          <CardHeader>
+            <CardTitle>Chat with Data Assistant</CardTitle>
+            <CardDescription>
+              {selectedFile
+                ? `Analyzing ${selectedFile}`
+                : "Select a file to start chatting"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto">
             <div className="space-y-4">
@@ -116,13 +244,17 @@ export default function TalkToDatabase() {
                     className={`flex items-start gap-2 max-w-[80%] ${
                       message.role === "user"
                         ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                        : message.isQuery
+                        ? "bg-gray-700/50 backdrop-blur-sm text-gray-200"
                         : "bg-white/10 backdrop-blur-sm border border-white/30"
                     } p-3 rounded-lg shadow-sm`}
                   >
                     {message.role !== "user" && (
                       <Bot className="h-5 w-5 mt-1" />
                     )}
-                    <div>{message.content}</div>
+                    <div className={message.isQuery ? "font-mono text-sm" : ""}>
+                      {message.content}
+                    </div>
                     {message.role === "user" && (
                       <User className="h-5 w-5 mt-1" />
                     )}
@@ -150,7 +282,11 @@ export default function TalkToDatabase() {
           <CardFooter className="border-t pt-4">
             <div className="flex w-full items-center space-x-2">
               <Input
-                placeholder="Ask a question about your data..."
+                placeholder={
+                  selectedFile
+                    ? "Ask a question about your data..."
+                    : "Select a file to start chatting"
+                }
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -159,11 +295,12 @@ export default function TalkToDatabase() {
                     handleSend();
                   }
                 }}
+                disabled={!selectedFile}
               />
               <Button
                 size="icon"
                 onClick={handleSend}
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !input.trim() || !selectedFile}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 transition-opacity"
               >
                 <Send className="h-4 w-4" />
@@ -171,124 +308,9 @@ export default function TalkToDatabase() {
             </div>
           </CardFooter>
         </Card>
-
-        <Card className="lg:col-span-2 flex flex-col">
-          <CardHeader>
-            <CardTitle>Generated SQL & Results</CardTitle>
-            <CardDescription>
-              View and execute the generated SQL query
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-auto">
-            <Tabs defaultValue="query">
-              <TabsList className="mb-4">
-                <TabsTrigger value="query">SQL Query</TabsTrigger>
-                <TabsTrigger value="results">Results</TabsTrigger>
-              </TabsList>
-              <TabsContent value="query" className="h-full">
-                {generatedSQL ? (
-                  <div className="relative h-[calc(100vh-350px)] border rounded-md overflow-hidden">
-                    <pre className="p-4 overflow-auto bg-gray-100 dark:bg-gray-800 h-full">
-                      {generatedSQL}
-                    </pre>
-                  </div>
-                ) : (
-                  <div className="h-[calc(100vh-350px)] flex items-center justify-center border-2 border-dashed rounded-md">
-                    <div className="text-center text-muted-foreground">
-                      <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Ask a question to generate SQL</p>
-                      <p className="text-sm mt-2">
-                        Example: "Show me the top 5 product categories by sales
-                        revenue in the last quarter"
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="results">
-                {hasResults ? (
-                  <div className="border rounded-md overflow-hidden">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-muted">
-                          <th className="text-left p-2 border-b">
-                            category_name
-                          </th>
-                          <th className="text-left p-2 border-b">
-                            total_revenue
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="p-2 border-b">Electronics</td>
-                          <td className="p-2 border-b">$245,678.90</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 border-b">Clothing</td>
-                          <td className="p-2 border-b">$187,432.50</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 border-b">Home & Kitchen</td>
-                          <td className="p-2 border-b">$156,789.20</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 border-b">Sports & Outdoors</td>
-                          <td className="p-2 border-b">$98,765.40</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2">Books</td>
-                          <td className="p-2">$76,543.20</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="h-[calc(100vh-350px)] flex items-center justify-center border-2 border-dashed rounded-md">
-                    <div className="text-center text-muted-foreground">
-                      <p>Execute your query to see results</p>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-          <CardFooter className="border-t pt-4 flex justify-between">
-            <Button
-              variant="outline"
-              onClick={handleExplainQuery}
-              disabled={!generatedSQL}
-            >
-              Explain Query
-            </Button>
-            <Button
-              onClick={handleExecute}
-              disabled={!generatedSQL}
-              className="gap-2"
-            >
-              Execute Query <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardFooter>
-        </Card>
       </div>
 
       {/* Query Explanation Dialog */}
-      <Dialog
-        open={isExplanationDialogOpen}
-        onOpenChange={setIsExplanationDialogOpen}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>SQL Query Explanation</DialogTitle>
-            <DialogDescription>
-              Detailed breakdown of the generated SQL query
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[500px] overflow-auto p-4 bg-gray-100 dark:bg-gray-800 rounded-md">
-            <p>{queryExplanation}</p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

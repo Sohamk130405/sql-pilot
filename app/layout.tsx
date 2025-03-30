@@ -65,6 +65,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <Toaster />
           </ThemeProvider>
         </AuthProvdider>
       </body>
@@ -74,3 +75,5 @@ export default function RootLayout({
 
 import "./globals.css";
 import AuthProvdider from "@/components/auth-provider";
+import { ToastProvider } from "@/components/ui/toast";
+import { Toaster } from "@/components/ui/toaster";
