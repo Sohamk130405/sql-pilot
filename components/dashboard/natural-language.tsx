@@ -1,270 +1,240 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Sparkles, Play, Download, Copy, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
+import useDashboardStore from "@/store/dashboard";
 import MonacoEditor from "@/components/shared/monaco-editor";
 
 export default function NaturalLanguage() {
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [generatedSQL, setGeneratedSQL] = useState<string | null>(null);
+  const [queryExplanation, setQueryExplanation] = useState<string | null>(null);
+  const [executionResult, setExecutionResult] = useState<any | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(false);
-  const [hasExecuted, setHasExecuted] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [naturalLanguageInput, setNaturalLanguageInput] = useState("");
-  const [generatedSQL, setGeneratedSQL] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("sql");
 
-  const handleGenerate = () => {
-    if (!naturalLanguageInput.trim()) return;
+  const schema = useDashboardStore((state) => state.schema);
 
-    setIsGenerating(true);
+  const handleGenerateSQL = async () => {
+    if (!prompt.trim() || !schema?.ddl?.length) return;
 
-    // Simulate API call
-    setTimeout(() => {
-      setGeneratedSQL(`-- Find top 5 product categories by sales revenue in the last quarter
-SELECT 
-  c.name AS category_name,
-  SUM(oi.quantity * oi.price) AS total_revenue
-FROM 
-  orders o
-JOIN 
-  order_items oi ON o.order_id = oi.order_id
-JOIN 
-  products p ON oi.product_id = p.product_id
-JOIN 
-  categories c ON p.category_id = c.category_id
-WHERE 
-  o.order_date >= DATE_TRUNC('quarter', CURRENT_DATE) - INTERVAL '3' MONTH
-  AND o.order_date < DATE_TRUNC('quarter', CURRENT_DATE)
-GROUP BY 
-  c.name
-ORDER BY 
-  total_revenue DESC
-LIMIT 5;`);
-      setIsGenerating(false);
-      setHasGenerated(true);
-    }, 2000);
+    setIsLoading(true);
+    setGeneratedSQL(null);
+    setQueryExplanation(null);
+    setError(null);
+
+    try {
+      const response = await fetch("http://10.1.50.35:5000/translate_sql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          natural_query: prompt,
+          schema_info: schema.ddl.split("\n\n"),
+          dialect: "trino",
+        }),
+      });
+
+      const data = await response.json();
+      if (data.sql) {
+        setGeneratedSQL(data.sql);
+        setQueryExplanation(data.explaination);
+      } else {
+        setError("Failed to generate SQL. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error generating SQL:", err);
+      setError("Error generating SQL. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleExecute = () => {
+  const handleExecuteSQL = async () => {
+    if (!generatedSQL) return;
+
     setIsExecuting(true);
+    setExecutionResult(null);
+    setError(null);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await fetch("http://10.1.50.35:5000/execute_query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sql_query: generatedSQL,
+          schema: schema?.name,
+          dialect: "trino",
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setExecutionResult(data.output);
+        setActiveTab("results"); // Switch to the Explanation tab
+      } else {
+        setError("Error executing SQL. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error executing SQL:", err);
+      setError("Error executing SQL. Please try again.");
+    } finally {
       setIsExecuting(false);
-      setHasExecuted(true);
-    }, 1500);
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(generatedSQL);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle className="gradient-text">SQL Query Request</CardTitle>
-            <CardDescription>
-              Describe the SQL query you need in natural language
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="Example: Show me the top 5 product categories by sales revenue in the last quarter"
-              className="min-h-[200px]"
-              value={naturalLanguageInput}
-              onChange={(e) => setNaturalLanguageInput(e.target.value)}
-            />
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                SQL Dialect:
-              </span>
-              <select className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm">
-                <option value="trino">Trino</option>
-                <option value="spark">Spark SQL</option>
-              </select>
-            </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Editor Section */}
+      <Card className="bg-dark-100/50 backdrop-blur-md border border-white/10 overflow-hidden">
+        <div className="p-6 border-b border-white/10">
+          <h3 className="text-xl font-display font-bold neon-gradient-text">
+            Natural Language to SQL
+          </h3>
+          <p className="text-muted-foreground text-sm mt-1">
+            Enter your query in natural language, and we'll generate the SQL for
+            you.
+          </p>
+        </div>
+        <div className="p-6">
+          <Input
+            placeholder="Example: Show the top 5 products by sales in the last month"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+          />
+        </div>
+        <div className="px-6 py-4 border-t border-white/10 flex justify-end">
+          <Button
+            onClick={handleGenerateSQL}
+            disabled={isLoading || !prompt.trim()}
+            className="neon-gradient-bg hover:opacity-90 transition-opacity"
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating...
+              </div>
+            ) : (
+              "Generate SQL"
+            )}
+          </Button>
+        </div>
+      </Card>
+
+      {/* Results and Explanation Section */}
+      <Card className="bg-dark-100/50 backdrop-blur-md border border-white/10 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="p-6 border-b border-white/10">
+            <TabsList>
+              <TabsTrigger value="sql">Generated SQL</TabsTrigger>
+              <TabsTrigger value="explanation">Explanation</TabsTrigger>
+              <TabsTrigger value="results">Execution Results</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="sql" className="p-6">
+            {generatedSQL ? (
+              <div className="relative h-[calc(100vh-350px)] border rounded-md overflow-hidden">
+                <MonacoEditor language="sql" value={generatedSQL} />
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No SQL generated yet. Enter a prompt to generate SQL.
+              </p>
+            )}
+          </TabsContent>
+          <TabsContent value="explanation" className="p-6">
+            {queryExplanation ? (
+              <p className="text-sm">{queryExplanation}</p>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No explanation available. Generate SQL to view the explanation.
+              </p>
+            )}
+          </TabsContent>
+          <TabsContent value="results" className="p-6">
+            {isExecuting ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : error ? (
+              <div className="text-red-500 text-sm">{error}</div>
+            ) : executionResult ? (
+              <table className="w-full text-sm border-collapse border border-white/10">
+                <thead>
+                  <tr className="bg-muted">
+                    {executionResult.columns.map(
+                      (col: string, index: number) => (
+                        <th
+                          key={index}
+                          className="text-left p-2 border border-white/10"
+                        >
+                          {col}
+                        </th>
+                      )
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {executionResult.rows.length > 0 ? (
+                    executionResult.rows.map((row: any[], rowIndex: number) => (
+                      <tr key={rowIndex}>
+                        {row.map((cell: any, cellIndex: number) => (
+                          <td
+                            key={cellIndex}
+                            className="p-2 border border-white/10"
+                          >
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={executionResult.columns.length}
+                        className="p-2 text-center text-muted-foreground"
+                      >
+                        No results found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No results to display. Execute a query to see results.
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
+        {generatedSQL && (
+          <div className="px-6 py-4 border-t border-white/10 flex justify-end">
             <Button
-              onClick={handleGenerate}
-              disabled={isGenerating || !naturalLanguageInput.trim()}
-              className="gap-2 bg-gradient-to-r from-purple to-pink hover:opacity-90 transition-opacity"
+              onClick={handleExecuteSQL}
+              disabled={isExecuting}
+              className="neon-gradient-bg hover:opacity-90 transition-opacity"
             >
-              {isGenerating ? (
-                <>Generating...</>
+              {isExecuting ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Executing...
+                </div>
               ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Generate SQL
-                </>
+                "Execute Query"
               )}
             </Button>
-          </CardFooter>
-        </Card>
-
-        {hasExecuted ? (
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Query Results</CardTitle>
-                  <CardDescription>
-                    Data returned from your query
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="table">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="table">Table</TabsTrigger>
-                  <TabsTrigger value="chart">Chart</TabsTrigger>
-                </TabsList>
-                <TabsContent value="table">
-                  <div className="border rounded-md overflow-hidden">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-muted">
-                          <th className="text-left p-2 border-b">
-                            category_name
-                          </th>
-                          <th className="text-left p-2 border-b">
-                            total_revenue
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="p-2 border-b">Electronics</td>
-                          <td className="p-2 border-b">$245,678.90</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 border-b">Clothing</td>
-                          <td className="p-2 border-b">$187,432.50</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 border-b">Home & Kitchen</td>
-                          <td className="p-2 border-b">$156,789.20</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 border-b">Sports & Outdoors</td>
-                          <td className="p-2 border-b">$98,765.40</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2">Books</td>
-                          <td className="p-2">$76,543.20</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </TabsContent>
-                <TabsContent value="chart">
-                  <div className="border rounded-md p-4 h-[300px] flex items-center justify-center">
-                    <img
-                      src="/placeholder.svg?height=250&width=400"
-                      alt="Bar Chart"
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Query Results</CardTitle>
-              <CardDescription>
-                Execute your query to see results
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="min-h-[300px] flex items-center justify-center border-2 border-dashed rounded-md">
-              <div className="text-center text-muted-foreground">
-                <p>Query results will appear here</p>
-                <p className="text-sm">Generate and execute a query first</p>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         )}
-      </div>
-
-      {hasGenerated && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Generated SQL</CardTitle>
-                  <CardDescription>
-                    SQL query based on your request
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleCopy}>
-                    {copied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="relative h-[calc(100vh-350px)] border rounded-md overflow-hidden">
-                <MonacoEditor
-                  language="sql"
-                  value={generatedSQL}
-                  onChange={(value) => setGeneratedSQL(value || "")}
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline">Explain Query</Button>
-              <Button
-                className="gap-2 bg-gradient-to-r from-teal to-lime hover:opacity-90 transition-opacity"
-                onClick={handleExecute}
-                disabled={isExecuting}
-              >
-                {isExecuting ? (
-                  <>Executing...</>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4" />
-                    Execute Query
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        </motion.div>
-      )}
+      </Card>
     </div>
   );
 }
