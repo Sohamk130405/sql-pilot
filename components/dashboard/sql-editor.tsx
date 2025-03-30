@@ -29,7 +29,7 @@ export default function SQLEditor() {
         },
         body: JSON.stringify({
           sql_query: sqlQuery,
-          schema: schema?.name, // Replace with dynamic schema if needed
+          schema: schema?.name,
           dialect: "trino",
         }),
       });

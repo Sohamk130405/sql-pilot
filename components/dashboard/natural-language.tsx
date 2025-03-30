@@ -23,7 +23,7 @@ export default function NaturalLanguage() {
 
   const handleGenerateSQL = async () => {
     if (!prompt.trim() || !schema?.ddl?.length) return;
-
+    setActiveTab("sql");
     setIsLoading(true);
     setGeneratedSQL(null);
     setQueryExplanation(null);

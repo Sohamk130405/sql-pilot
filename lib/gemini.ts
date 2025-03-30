@@ -89,6 +89,36 @@ class GeminiSQLGenerator {
       return "Unable to generate explanation.";
     }
   }
+
+  async getCompletion(
+    partialQuery: string,
+    schema: any
+  ): Promise<string | null> {
+    try {
+      const prompt = `
+        Complete this partial SQL query based on the schema context.
+        Schema: ${JSON.stringify(schema)}
+        Partial query: "${partialQuery}"
+
+        Rules:
+        - Only provide the completion part
+        - Keep it contextually relevant
+        - Be concise and precise
+        - Consider table relationships
+
+        Return ONLY the completion text.
+      `;
+
+      const model = this.genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+      });
+      const result = await model.generateContent(prompt);
+      return result.response.text().trim();
+    } catch (error) {
+      console.error("Completion error:", error);
+      return null;
+    }
+  }
 }
 
 // Export a configured instance or a factory function
@@ -99,3 +129,25 @@ export const createGeminiSQLGenerator = () => {
   }
   return new GeminiSQLGenerator(apiKey);
 };
+
+export async function fetchQuerySuggestions(query: string): Promise<string[]> {
+  try {
+    const response = await fetch("http://10.1.50.35:5000/query_suggestions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch query suggestions");
+    }
+
+    const data = await response.json();
+    return data.suggestions || [];
+  } catch (error) {
+    console.error("Error fetching query suggestions:", error);
+    return [];
+  }
+}
