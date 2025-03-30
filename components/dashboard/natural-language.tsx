@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import useDashboardStore from "@/store/dashboard";
 import MonacoEditor from "@/components/shared/monaco-editor";
+import { saveQuery } from "@/actions/query";
+import { useParams } from "next/navigation";
 
 export default function NaturalLanguage() {
   const [prompt, setPrompt] = useState("");
@@ -20,6 +22,7 @@ export default function NaturalLanguage() {
   const [activeTab, setActiveTab] = useState("sql");
 
   const schema = useDashboardStore((state) => state.schema);
+  const { id } = useParams();
 
   const handleGenerateSQL = async () => {
     if (!prompt.trim() || !schema?.ddl?.length) return;
@@ -80,9 +83,25 @@ export default function NaturalLanguage() {
       const data = await response.json();
       if (data.success) {
         setExecutionResult(data.output);
-        setActiveTab("results"); // Switch to the Explanation tab
+        setActiveTab("results");
+        await saveQuery({
+          project: id as string,
+          schemaId: schema?._id as string,
+          queryText: generatedSQL,
+          dialect: "trino",
+          outputColumns: data.output.columns,
+          outputRows: data.output.rows,
+        });
       } else {
-        setError("Error executing SQL. Please try again.");
+        setError(data.error.message);
+        await saveQuery({
+          project: id as string,
+          schemaId: schema?._id as string,
+          queryText: generatedSQL,
+          dialect: "trino",
+          errorMessage: data.error.message,
+          errorName: data.error.name,
+        });
       }
     } catch (err) {
       console.error("Error executing SQL:", err);

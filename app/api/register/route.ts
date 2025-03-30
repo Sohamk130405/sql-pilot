@@ -11,24 +11,36 @@ export async function POST(req: Request) {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return NextResponse.json({ error: "User already exists" }, { status: 400 });
+      return NextResponse.json(
+        { error: "User already exists" },
+        { status: 400 }
+      );
     }
-
+    const image = `https://ui-avatars.com/api/?name=${name}&background=random`;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ email, password: hashedPassword, name });
+    const newUser = new User({ email, password: hashedPassword, name, image });
     await newUser.save();
 
     // Generate a session token
-    const token = sign({ id: newUser._id, email: newUser.email }, process.env.JWT_SECRET!, {
-      expiresIn: "7d",
-    });
+    const token = sign(
+      { id: newUser._id, email: newUser.email, image },
+      process.env.JWT_SECRET!,
+      {
+        expiresIn: "7d",
+      }
+    );
 
-    const response = NextResponse.json({ message: "User registered successfully" });
+    const response = NextResponse.json({
+      message: "User registered successfully",
+    });
     response.cookies.set("authToken", token, { httpOnly: true, path: "/" });
 
     return response;
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

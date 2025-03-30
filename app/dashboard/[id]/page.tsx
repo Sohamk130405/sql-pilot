@@ -20,7 +20,7 @@ export default function PersonalizedDashboardPage() {
   const router = useRouter();
   useEffect(() => {
     if (!session || !session.user) return router.replace("/");
-  }, [session]);
+  }, [session, session?.user]);
   return (
     <div className="flex h-screen bg-dark-300 overflow-hidden">
       <div className="absolute inset-0 noise-bg pointer-events-none"></div>

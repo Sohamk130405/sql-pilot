@@ -6,6 +6,8 @@ import MonacoEditor from "@/components/shared/monaco-editor";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import useDashboardStore from "@/store/dashboard";
+import { saveQuery } from "@/actions/query";
+import { useParams } from "next/navigation";
 
 export default function SQLEditor() {
   const [sqlQuery, setSqlQuery] = useState("");
@@ -13,6 +15,7 @@ export default function SQLEditor() {
   const [executionResult, setExecutionResult] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const schema = useDashboardStore((state) => state.schema);
+  const { id } = useParams();
 
   const handleExecute = async () => {
     if (!sqlQuery.trim()) return;
@@ -37,8 +40,24 @@ export default function SQLEditor() {
       const data = await response.json();
       if (data.success) {
         setExecutionResult(data.output);
+        await saveQuery({
+          project: id as string,
+          schemaId: schema?._id as string,
+          queryText: sqlQuery,
+          dialect: "trino",
+          outputColumns: data.output.columns,
+          outputRows: data.output.rows
+        });
       } else {
         setError(data.error.message);
+        await saveQuery({
+          project: id as string,
+          schemaId: schema?._id as string,
+          queryText: sqlQuery,
+          dialect: "trino",
+          errorMessage: data.error.message,
+          errorName: data.error.name
+        });
       }
     } catch (error) {
       console.error("Error executing SQL:", error);

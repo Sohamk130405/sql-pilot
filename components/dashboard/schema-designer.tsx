@@ -13,13 +13,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import MonacoEditor from "@/components/shared/monaco-editor";
-import { saveSchema } from "@/actions/schemas"; // Import the saveSchema action
+import { saveSchema } from "@/actions/schemas";
 import useDashboardStore from "@/store/dashboard";
 import { useParams } from "next/navigation";
-import schemaResponse from "@/lib/schemaResponse.json";
 import MermaidRenderer from "@/components/dashboard/MermaidRenderer";
 import { Input } from "../ui/input";
-import { executeQuery } from "@/actions/query";
 
 export default function SchemaDesigner() {
   const [isGenerating, setIsGenerating] = useState(false);
