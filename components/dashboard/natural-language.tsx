@@ -162,7 +162,11 @@ export default function NaturalLanguage() {
           <TabsContent value="sql" className="p-6">
             {generatedSQL ? (
               <div className="relative h-[calc(100vh-350px)] border rounded-md overflow-hidden">
-                <MonacoEditor language="sql" value={generatedSQL} />
+                <MonacoEditor
+                  language="sql"
+                  value={generatedSQL}
+                  onChange={(val) => setGeneratedSQL(val as string)}
+                />
               </div>
             ) : (
               <p className="text-muted-foreground text-sm">
