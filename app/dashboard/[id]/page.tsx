@@ -1,21 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import SchemaDesigner from "@/components/dashboard/schema-designer";
-import SqlGenerator from "@/components/dashboard/sql-generator";
-import NaturalLanguageQuery from "@/components/dashboard/natural-language-query";
+import NaturalLanguage from "@/components/dashboard/natural-language";
+import TalkToDatabase from "@/components/dashboard/talk-to-database";
 import QueryHistory from "@/components/dashboard/query-history";
+import SQLEditor from "@/components/dashboard/sql-editor";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/dashboard/navbar";
 import Sidebar from "@/components/dashboard/sidebar";
+import { useSession } from "next-auth/react";
 
 export default function PersonalizedDashboardPage() {
-  const { id } = useParams();
   const [activeTab, setActiveTab] = useState("schema");
-  
+  const { data: session } = useSession();
+  const router = useRouter();
+  useEffect(() => {
+    if (!session || !session.user) return router.replace("/");
+  }, [session]);
   return (
     <div className="flex h-screen bg-dark-300 overflow-hidden">
       <div className="absolute inset-0 noise-bg pointer-events-none"></div>
@@ -38,17 +43,6 @@ export default function PersonalizedDashboardPage() {
                 <SchemaDesigner />
               </motion.div>
             )}
-            {activeTab === "sql" && (
-              <motion.div
-                key="sql"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <SqlGenerator />
-              </motion.div>
-            )}
             {activeTab === "nlq" && (
               <motion.div
                 key="nlq"
@@ -57,7 +51,18 @@ export default function PersonalizedDashboardPage() {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <NaturalLanguageQuery />
+                <NaturalLanguage />
+              </motion.div>
+            )}
+            {activeTab === "talk" && (
+              <motion.div
+                key="talk"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <TalkToDatabase />
               </motion.div>
             )}
             {activeTab === "history" && (
@@ -71,10 +76,20 @@ export default function PersonalizedDashboardPage() {
                 <QueryHistory />
               </motion.div>
             )}
+            {activeTab === "sql-editor" && (
+              <motion.div
+                key="sql-editor"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <SQLEditor />
+              </motion.div>
+            )}
           </AnimatePresence>
         </main>
       </div>
     </div>
   );
 }
-

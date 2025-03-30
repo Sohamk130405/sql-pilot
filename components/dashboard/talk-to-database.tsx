@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { createGeminiSQLGenerator, SQLGenerationResult } from "@/lib/gemini";
 
-export default function NaturalLanguageQuery() {
+export default function TalkToDatabase() {
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<{ role: string; content: string }[]>(
     [

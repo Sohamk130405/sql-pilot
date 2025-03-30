@@ -68,7 +68,9 @@ export default function MonacoEditor({
       setEditor(newEditor);
 
       return () => {
-        newEditor.dispose();
+        if (newEditor) {
+          newEditor.dispose();
+        }
       };
     }
   }, [editorRef, language, readOnly]);

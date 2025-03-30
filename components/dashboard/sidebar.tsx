@@ -84,19 +84,24 @@ export default function Sidebar({
                       icon: <Database className="h-4 w-4" />,
                     },
                     {
-                      id: "sql",
-                      label: "SQL Generator",
+                      id: "nlq",
+                      label: "Natural Language",
                       icon: <Code className="h-4 w-4" />,
                     },
                     {
-                      id: "nlq",
-                      label: "Natural Language",
+                      id: "talk",
+                      label: "Talk To Database",
                       icon: <MessageSquare className="h-4 w-4" />,
                     },
                     {
                       id: "history",
                       label: "Query History",
                       icon: <BarChart3 className="h-4 w-4" />,
+                    },
+                    {
+                      id: "sql-editor",
+                      label: "SQL Editor",
+                      icon: <Code className="h-4 w-4" />,
                     },
                   ].map((item) => (
                     <Button
@@ -158,7 +163,7 @@ export default function Sidebar({
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                         onClick={() =>
-                          router.push(`/dashboard/${project._id.toString()}`)
+                          router.replace(`/dashboard/${project._id.toString()}`)
                         }
                       >
                         {project.title}
@@ -173,7 +178,7 @@ export default function Sidebar({
                       <div className="h-8 w-8 rounded-full bg-neon-purple/20 flex items-center justify-center">
                         <Sparkles className="h-4 w-4 text-neon-purple" />
                       </div>
-                      <h3 className="font-medium">Pro Features</h3>
+                      <h3 className="font-medium">Pro Features</h3>{" "}
                     </div>
                     <p className="text-xs text-muted-foreground mb-3">
                       Unlock advanced features with our Pro plan

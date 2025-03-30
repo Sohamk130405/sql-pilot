@@ -20,13 +20,14 @@ import { signOut, useSession } from "next-auth/react";
 import CreateProjectModal from "./create-project-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import Link from "next/link";
-import { getSchemas } from "@/actions/schemas"; // Import the server action
+import { getSchemas, SchemaType } from "@/actions/schemas"; // Import the server action
 import { useParams } from "next/navigation";
+import useDashboardStore from "@/store/dashboard";
 
 const Navbar = () => {
   const { data: session } = useSession();
   const { id } = useParams();
-  const [schemas, setSchemas] = useState<string[]>([]);
+  const [schemas, setSchemas] = useState<SchemaType[]>([]);
   const [selectedSchema, setSelectedSchema] = useState<string | null>(null);
   const [notifications, setNotifications] = useState([
     {
@@ -51,37 +52,37 @@ const Navbar = () => {
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const setSchema = useDashboardStore((state) => state.setSchema);
 
   useEffect(() => {
     const fetchSchemas = async () => {
       const fetchedSchemas = JSON.parse(await getSchemas(id as string));
-      console.log("Hello");
       if (fetchedSchemas.length > 0) {
-        setSchemas(fetchedSchemas.map((schema: any) => schema.name));
+        setSchemas(fetchedSchemas);
         setSelectedSchema(fetchedSchemas[0].name);
-
-        console.log(fetchedSchemas);
-        console.log(schemas);
+        setSchema(fetchedSchemas[0]); // Set the initial schema in the store
       } else {
         setSchemas([]);
         setSelectedSchema(null);
+        setSchema(null); // Clear the schema in the store
       }
     };
     fetchSchemas();
-  }, []);
+  }, [id]);
+
+  const handleSchemaChange = (schemaName: string) => {
+    setSelectedSchema(schemaName);
+    const schema = schemas.find((s: any) => s.name === schemaName);
+    if (schema) {
+      setSchema(schema); // Update the store with the selected schema object
+    }
+  };
 
   return (
     <>
       <header className="sticky top-0 z-30 bg-dark-200/80 backdrop-blur-md border-b border-white/10 p-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            {/* <h1 className="text-2xl font-display font-bold neon-gradient-text mr-4">
-            {activeTab === "schema" && "Schema Designer"}
-            {activeTab === "sql" && "SQL Generator"}
-            {activeTab === "nlq" && "Natural Language Query"}
-            {activeTab === "history" && "Query History"}
-          </h1> */}
-
             <Button
               variant="outline"
               size="sm"
@@ -99,16 +100,21 @@ const Navbar = () => {
           <div className="flex items-center gap-2">
             <div className="hidden md:flex items-center gap-2 mr-2">
               {schemas.length > 0 && (
-                <Select onValueChange={setSelectedSchema}>
+                <Select
+                  onValueChange={handleSchemaChange}
+                  value={selectedSchema as string}
+                >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select a schema" />
                   </SelectTrigger>
                   <SelectContent className="rounded-md bg-dark-100/50 border border-white/10 py-1 text-sm">
-                    {schemas.map((schema) => (
-                      <SelectItem key={schema} value={schema}>
-                        {schema}
-                      </SelectItem>
-                    ))}
+                    {schemas.map((schema) =>
+                      schema.name ? (
+                        <SelectItem key={schema.name} value={schema.name}>
+                          {schema.name}
+                        </SelectItem>
+                      ) : null
+                    )}
                   </SelectContent>
                 </Select>
               )}

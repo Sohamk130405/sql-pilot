@@ -4,6 +4,7 @@ export interface ISchema extends Document {
   name: string;
   ddl: string;
   project: Types.ObjectId;
+  mermaid: string;
 }
 
 const schemaSchema = new mongoose.Schema<ISchema>(
@@ -15,6 +16,7 @@ const schemaSchema = new mongoose.Schema<ISchema>(
       ref: "Project",
       required: true,
     },
+    mermaid: { type: String, required: true },
   },
   { timestamps: true }
 );

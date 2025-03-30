@@ -26,7 +26,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (session?.user) router.push("/dashboard");
   }, [session]);
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -201,9 +201,12 @@ export default function LoginPage() {
 
               <div className="grid grid-cols-1 gap-3">
                 <Button
+                  type="button"
                   variant="outline"
                   className="neon-border flex items-center justify-center gap-2"
-                  onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                  onClick={() =>
+                    signIn("google", { callbackUrl: "/dashboard" })
+                  }
                 >
                   <Mail className="h-4 w-4" />
                   <span>Login with Google</span>

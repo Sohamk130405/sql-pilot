@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import useDashboardStore from "@/store/dashboard";
 import { getProjectsByUser } from "@/actions/projects";
 import CreateProjectModal from "@/components/dashboard/create-project-modal";
-import { Loader } from "lucide-react";
 import Loading from "./loading";
 
 export default function DashboardPage() {
@@ -26,6 +25,7 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error("Error fetching projects:", error);
+        router.push("/");
       } finally {
         setIsLoading(false);
       }

@@ -21,7 +21,6 @@ import HeroAnimation from "@/components/landing/hero-animation";
 import FeatureCard from "@/components/landing/feature-card";
 import Testimonial from "@/components/landing/testimonial";
 import PricingCard from "@/components/landing/pricing-card";
-import ThemeToggle from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import { signOut, useSession } from "next-auth/react";
 
@@ -119,14 +118,15 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-4">
             {session?.user ? (
-              <Button
-                onClick={() => signOut()}
-                variant="ghost"
-                size="sm"
-                className="hover:text-primary"
-              >
-                Logout
-              </Button>
+              <>
+                <Button onClick={() => signOut()} variant="ghost" size="sm">
+                  Logout
+                </Button>
+
+                <Button asChild>
+                  <Link href={"/dashboard"}>Dashboard</Link>
+                </Button>
+              </>
             ) : (
               <>
                 <Link href="/login">

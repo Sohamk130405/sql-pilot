@@ -16,7 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MonacoEditor from "@/components/shared/monaco-editor";
 
-export default function SqlGenerator() {
+export default function NaturalLanguage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
